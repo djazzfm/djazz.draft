@@ -5,6 +5,7 @@ register = template.Library()
 
 @register.filter(name='range')
 def filter_range(value, arg="0, 1"):
+    arg = str(arg)
     start = 0
     stop = int(value)
     step = 1
@@ -23,9 +24,9 @@ def filter_range(value, arg="0, 1"):
 
 @register.filter(name='indexof')
 def filter_index(index, tab):
-    if type(tab) == list and len(tab) > index:
+    try:
         return tab[index]
-    else:
+    except:
         return None
 
 @register.filter(name='attrof')
