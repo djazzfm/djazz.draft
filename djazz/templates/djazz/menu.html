@@ -1,0 +1,41 @@
+{% load djazz_extras %}
+
+{% if menu.title %}<h3>{{menu.title}}</h3>{% endif %}
+
+<table>
+    <tr>
+        <td>id</td>
+        <td>level</td>
+        <td>first</td>
+        <td>last</td>
+    </tr>
+    
+	{% for item in items %}
+	    <tr>
+	        <td>{{ item.item.id }}</td>
+	        <td>{{ item.level }}</td>
+	        <td>{{ item.first }}</td>
+	        <td>{{ item.last }}</td>
+	    </tr>
+	{% endfor %}
+</table>
+
+
+{% for item in items %}
+
+    {% if item.first %}<ul>{% endif %}
+    
+    {% if not item.first %}</li>{% endif %}
+    <li>{{item.item.label}}
+    
+    {% if item.last %}
+        {% with next=forloop.counter0|add:"1"|indexof:items %}
+            {% if next %}
+                {% for i in item.level|range:next.level %}</li></ul>{% endfor %}
+            {% else %}
+                {% for i in item.level|add:1|range:0 %}</li></ul>{% endfor %}
+            {% endif %}
+        {% endwith %}
+    {% endif %}
+
+{% endfor %}
