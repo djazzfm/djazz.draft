@@ -1,8 +1,5 @@
 from django.db import models
-
-from django.db import models
 from django.contrib.auth.models import User
-from django.template.defaultfilters import slugify
 
 
 class PostManager(models.Manager):
@@ -11,7 +8,7 @@ class PostManager(models.Manager):
 
 class Post(models.Model):
     
-    title = models.CharField(max_length=240)
+    title = models.CharField(max_length=240, null=True, blank=True)
     lang = models.CharField(max_length=10, null=True, blank=True)
     parent = models.ForeignKey('self', related_name='post_parent',
                                null=True, blank=True)
@@ -27,7 +24,6 @@ class Post(models.Model):
                                     related_name="post_last_editor",
                                     editable=False)
     last_date = models.DateTimeField(auto_now=True, auto_now_add=True)
-    
     
     objects = PostManager()
     

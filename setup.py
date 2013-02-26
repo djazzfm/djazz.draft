@@ -33,5 +33,5 @@ setup(name='Djazz',
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrators",
         "Operating System :: Linux"
-        ],
+        ]
      )
