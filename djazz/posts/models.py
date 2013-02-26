@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 class PostManager(models.Manager):
     pass
 
-
 class Post(models.Model):
     
     title = models.CharField(max_length=240, null=True, blank=True)
@@ -13,7 +12,7 @@ class Post(models.Model):
     parent = models.ForeignKey('self', related_name='post_parent',
                                null=True, blank=True)
     author = models.ForeignKey(User, related_name="post_author",
-                               null=True, blank=True, editable=False)
+                               null=True, blank=True)
     content = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=15, null=True, blank=True)
     type = models.CharField(max_length=25, blank=True, null=True)
@@ -29,6 +28,31 @@ class Post(models.Model):
     
     def __unicode__(self):
         return self.title
+    
+    
+    def add_comment(self, comment):
+        if not isinstance(comment, Post):
+            raise Exception('Post instance expected')
+        comment.format = self.format
+        comment.type = 'comment'
+        comment.parent = self
+        comment.save()
+        
+        if self.type == 'comment':
+            var = self.postvar_post.get(key='post_reference')
+            ref = var.value
+        else:
+            ref = self.id
+        comment.postvar_post.create(key='reference', value=str(ref))
+        
+        comment.postvar_post.create(key='parent', value=str(self.id))
+        for p in self.postvar_post.filter(key='parent'):
+            comment.postvar_post.create(key='parent', value=p.value)
+        
+        return comment
+    
+    def find_comments(self):
+        return self.post_parent.filter(type='comment')
     
     def to_html(self):
         from django.template import Context, loader
@@ -76,3 +100,64 @@ class PostVar(models.Model):
     
     def __unicode__(self):
         return self.key + " - " + self.post.title
+
+
+
+class Comment(Post):
+    TYPE = 'comment'
+    
+    class PaternityException(Exception):
+        pass
+    
+    class Meta:
+        proxy = True
+    
+    def save(self, *args, **kwargs):
+        if not self.id:
+            firstsave = True
+        else:
+            firstsave = False
+        
+        if not self.parent:
+            err = "Orphan comment posts are not allowed"
+            raise Comment.PaternityException(err)
+        
+        # Force type to "comment"
+        self.type = Comment.TYPE
+        super(Comment, self).save(*args, **kwargs)
+        
+        # Setting references in first save
+        if firstsave:
+            parent = self.parent
+            if not isinstance(parent, Comment):
+                self.set_parents([self.parent_id])
+                self.set_reference(self.parent_id)
+            else:
+                self.set_parents(parent.get_parents()\
+                    .append(self.parent_id))
+                self.set_reference(parent.get_reference())
+    
+    def get_parents(self):
+        parents = self.postvar_post.filter(key='comment_parent')
+        bulk = parents.values_list('value', flat=True)
+        return bulk
+    
+    def get_reference(self):
+        return self.postvar_post.get(key='comment_reference').value
+    
+    def set_parents(self, parents):
+        if not self.id:
+            return False
+        self.postvar_post.filter(key='comment_parent').delete()
+        for parent in parents:
+            self.postvar_post.create(key='comment_parent',
+                                     value=str(parent))
+        return True
+    
+    def set_reference(self, parent_id):
+        if not self.id:
+            return False
+        self.postvar_post.filter(key='comment_reference').delete()
+        self.postvar_post.create(key='comment_reference', value=parent_id)
+        return True
+    
