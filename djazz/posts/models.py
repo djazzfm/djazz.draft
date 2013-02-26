@@ -79,4 +79,4 @@ class PostVar(models.Model):
     objects = PostVarManager()
     
     def __unicode__(self):
-        return self.key + " - " + self.post.uid
+        return self.key + " - " + self.post.title

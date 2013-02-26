@@ -3,3 +3,4 @@
 .pydevproject
 manage.py
 testapp
+build

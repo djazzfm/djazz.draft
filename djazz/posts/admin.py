@@ -8,6 +8,7 @@ class PostVarInline(admin.TabularInline):
 
 
 class PostAdmin(admin.ModelAdmin):
+    inlines = [PostVarInline]
     def save_model(self, request, obj, form, change):
         if not obj.id:
             obj.author = request.user
