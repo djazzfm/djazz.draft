@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 
 
 class PostManager(models.Manager):
@@ -8,7 +9,9 @@ class PostManager(models.Manager):
 class Post(models.Model):
     
     title = models.CharField(max_length=240, null=True, blank=True)
+    sites = models.ManyToManyField(Site)
     lang = models.CharField(max_length=10, null=True, blank=True)
+    timezone = models.CharField(max_length=20)
     encoding = models.CharField(max_length=20, null=True, blank=True)
     parent = models.ForeignKey('self', related_name='post_parent',
                                null=True, blank=True)
@@ -16,8 +19,7 @@ class Post(models.Model):
                                null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     last_editor = models.ForeignKey(User,null=True, blank=True,
-                                    related_name="post_last_editor",
-                                    editable=False)
+                                    related_name="post_last_editor")
     last_date = models.DateTimeField(auto_now=True, auto_now_add=True)
     content = models.TextField(null=True, blank=True)
     type = models.CharField(max_length=25, blank=True, null=True)
