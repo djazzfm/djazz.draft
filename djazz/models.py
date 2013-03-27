@@ -1,32 +1,35 @@
 from django.db import models
 from django.core.cache import cache
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
+
+def get_cached_key(key, section=None):
+    if section == None:
+        section = ''
+    return '.'.join(['djazzconfig', str(section), str(key)])
+
+def get_cached_id(uid):
+    return '.'.join(['djazzconfigid', str(uid)])
+
 
 class ConfigManager(models.Manager):
     
-    def getvar(self, key, section=''):
-        if section == None:
-            return self.filter(key=key)
+    def getvar(self, key, section=None):
+        cachedkey = get_cached_key(key, section)
+        if cache.has_key(cachedkey):
+            return cache.get(cachedkey)
         else:
-            cachedkey = '.'.join([section, key])
-            if cache.has_key(cachedkey):
-                return cache.get(cachedkey)
-            else:
-                return self.get_or_create(key=key,section=section)[0]
+            var = self.get_or_create(key=key, section=section)[0]
+            return var.value
     
-    def setvar(self, key, value, section=''):
-        cachedkey = '.'.join([section, key])
+    def setvar(self, key, value, section=None):
         c = self.get_or_create(key=key, section=section)[0]
         c.value = value
         c.save()
-        cache.set(cachedkey, value)
     
-    def delvar(self, key, section=''):
-        cachedkey = '.'.join([section, key])
-        q = self.filter(key=key)
-        if section:
-            q = q.filter(section=section)
-        q.delete()
-        cache.delete(cachedkey)
+    def delvar(self, key, section=None):
+        self.filter(key=key, section=section).delete()
 
 
 class Config(models.Model):
@@ -40,5 +43,29 @@ class Config(models.Model):
     
     def __unicode__(self):
         section = self.section or ''
-        return '['+section+'] '+self.key
+        return section+'.'+self.key
+    
+    def clear_config_cache(self):
+        if self.id and cache.has_key(get_cached_id(self.id)):
+            cached_id = get_cached_id(self.id)
+            cached_key = cache.get(cached_id)
+            cache.delete(cached_id)
+            cache.delete(cached_key)
+    
+    def create_config_cache(self):
+        if not self.id: return;
+        cached_key = get_cached_key(self.key, self.section)
+        cached_id = get_cached_id(self.id)
+        cache.set(cached_id, cached_key)
+        cache.set(cached_key, str(self.value))
+    
+    def save(self, *args, **kwargs):
+        self.clear_config_cache()
+        super(Config, self).save(*args, **kwargs)
+        self.create_config_cache()
 
+@receiver(pre_delete)
+def configvar_delete(sender, **kwargs):
+    obj = kwargs['instance']
+    if isinstance(obj, Config):
+        obj.clear_config_cache()
