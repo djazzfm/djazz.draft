@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.cache import cache
 
 class ConfigManager(models.Manager):
     
@@ -6,18 +7,26 @@ class ConfigManager(models.Manager):
         if section == None:
             return self.filter(key=key)
         else:
-            return self.get_or_create(key=key,section=section)[0]
+            cachedkey = '.'.join([section, key])
+            if cache.has_key(cachedkey):
+                return cache.get(cachedkey)
+            else:
+                return self.get_or_create(key=key,section=section)[0]
     
     def setvar(self, key, value, section=''):
+        cachedkey = '.'.join([section, key])
         c = self.get_or_create(key=key, section=section)[0]
         c.value = value
         c.save()
+        cache.set(cachedkey, value)
     
     def delvar(self, key, section=''):
+        cachedkey = '.'.join([section, key])
         q = self.filter(key=key)
         if section:
             q = q.filter(section=section)
         q.delete()
+        cache.delete(cachedkey)
 
 
 class Config(models.Model):
@@ -32,3 +41,4 @@ class Config(models.Model):
     def __unicode__(self):
         section = self.section or ''
         return '['+section+'] '+self.key
+
