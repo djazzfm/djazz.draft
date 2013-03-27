@@ -17,11 +17,9 @@ class Post(models.Model):
     author = models.ForeignKey(User, related_name="post_author",
                                null=True, blank=True)
     date = models.DateTimeField()
-    tz = models.CharField(max_length=20)
     last_editor = models.ForeignKey(User,null=True, blank=True,
                                     related_name="post_last_editor")
     last_date = models.DateTimeField()
-    last_tz = models.CharField(max_length=20)
     content = models.TextField(null=True, blank=True)
     type = models.CharField(max_length=25, blank=True, null=True)
     format = models.CharField(max_length=100, null=True, blank=True)
