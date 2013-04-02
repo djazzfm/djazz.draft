@@ -75,7 +75,7 @@ class PostVarManager(models.Manager):
     pass
 
 class PostVar(models.Model):
-    post    = models.ForeignKey('Post',related_name="postvar_post")
+    post    = models.ForeignKey('Post',related_name="postvar")
     key     = models.CharField(max_length=60)
     value   = models.TextField(null=True,blank=True)
     objects = PostVarManager()
