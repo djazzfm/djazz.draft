@@ -3,10 +3,11 @@
 from distutils.core import setup
 import os
 
+rootpackage = 'djazz'
+shareds = ['static', 'templates']
 
 packages = []
-
-for dirpath, dirnames, filenames in os.walk('djazz'):
+for dirpath, dirnames, filenames in os.walk(rootpackage):
     # Ignore dirnames that start with '.'
     for i, dirname in enumerate(dirnames):
         if dirname.startswith('.'): del dirnames[i]
@@ -14,9 +15,17 @@ for dirpath, dirnames, filenames in os.walk('djazz'):
         package = '.'.join(dirpath.split('/'))
         packages.append(package)
 
-
-datas = {'djazz':       ['templates/djazz/*.html'],
-         'djazz.posts': ['templates/djazz/posts/formatters/*.html']}
+datas = {}
+for package in packages:
+    datas[package] = []
+    pdir = '/'.join(package.split('.'))
+    for shared in shareds:
+        sharedpath = '/'.join([pdir, shared])
+        if os.path.exists(sharedpath):
+            for root, dirs, files in os.walk(sharedpath):
+                for f in files:
+                    path = '/'.join([root, f])[len(pdir+'/'):]
+                    datas[package].append(path)
 
 
 setup(name='Djazz',
