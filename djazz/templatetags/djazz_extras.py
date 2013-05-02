@@ -32,3 +32,40 @@ def filter_index(index, tab):
 @register.filter(name='attrof')
 def filter_attr(attr, obj):
     return getattr(obj, attr, None)
+
+
+
+
+def render_include_once(self, context):
+    ctname = '_include_once_node_registry'
+    if not ctname in context:
+        context[ctname] = {}
+    
+    if not self.include_path or self.include_path in context[ctname]:
+        return ""
+    else:
+        context[ctname][self.include_path] = True
+        return self._render_origin(context)
+
+
+@register.tag(name='include_once')
+def do_include_once(parser, token):
+    import types
+    from django.template.loader_tags import (do_include,
+                                             ConstantIncludeNode,
+                                             IncludeNode)
+    included = do_include(parser, token)
+    
+    if isinstance(included, ConstantIncludeNode):
+        try:
+            included.include_path = included.template.name
+        except:
+            included.include_path = None
+    elif isinstance(included, IncludeNode):
+        included.include_path = included.template_name
+    else:
+        included.include_path = None
+    
+    included._render_origin = included.render
+    included.render = types.MethodType(render_include_once, included)
+    return included
