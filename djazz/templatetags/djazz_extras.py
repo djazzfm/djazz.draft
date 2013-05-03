@@ -35,7 +35,6 @@ def filter_attr(attr, obj):
 
 
 
-
 def render_include_once(self, context):
     ctname = '_include_once_node_registry'
     if not ctname in context:
@@ -46,7 +45,6 @@ def render_include_once(self, context):
     else:
         context[ctname][self.include_path] = True
         return self._render_origin(context)
-
 
 @register.tag(name='include_once')
 def do_include_once(parser, token):
@@ -69,3 +67,29 @@ def do_include_once(parser, token):
     included._render_origin = included.render
     included.render = types.MethodType(render_include_once, included)
     return included
+
+
+def render_ssi_once(self, context):
+    ctname = '_ssi_once_node_registry'
+    if not ctname in context:
+        context[ctname] = {}
+    
+    path = str(self.filepath)
+    if path[0] in ['"',"'"] and path[0] == path[-1]:
+        path = path[1:-1]
+    
+    if path in context[ctname]:
+        return ""
+    else:
+        context[ctname][path] = True
+        return self._render_origin(context)
+
+@register.tag(name='ssi_once')
+def do_ssi_once(parser, token):
+    
+    import types
+    from django.template.defaulttags import ssi
+    node = ssi(parser, token)
+    node._render_origin = node.render
+    node.render = types.MethodType(render_ssi_once, node)
+    return node
